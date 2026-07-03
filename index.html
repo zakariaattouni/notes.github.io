@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Smart Note Pro | النسخة الاحترافية المنظمة</title>
+
+    <!-- سيتم ربط المانيفست ديناميكياً عبر JS -->
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
     <script src="https://cdn.tailwindcss.com">
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
@@ -216,7 +222,6 @@
             gap: 0.3rem;
             flex-shrink: 0;
         }
-        /* أزرار موحدة */
         .header-btn {
             width: 38px;
             height: 38px;
@@ -246,7 +251,6 @@
             background: rgba(37, 99, 235, 0.12);
             color: var(--primary);
         }
-        /* زر الإعدادات مميز */
         .header-btn.settings {
             background: rgba(37, 99, 235, 0.06);
             color: var(--primary);
@@ -254,7 +258,14 @@
         .header-btn.settings:hover {
             background: rgba(37, 99, 235, 0.15);
         }
-        /* شارة الحالة */
+        /* زر التثبيت */
+        .header-btn.install-btn {
+            background: rgba(16, 185, 129, 0.12);
+            color: #10b981;
+        }
+        .header-btn.install-btn:hover {
+            background: rgba(16, 185, 129, 0.25);
+        }
         .status-badge {
             font-size: 0.6rem;
             padding: 0.2rem 0.7rem;
@@ -282,7 +293,6 @@
             color: #fcd34d;
         }
 
-        /* شريط البحث */
         .search-wrapper {
             position: relative;
             width: 100%;
@@ -325,7 +335,6 @@
             font-size: 0.8rem;
         }
 
-        /* الشعار */
         .brand-logo {
             width: 36px;
             height: 36px;
@@ -355,7 +364,6 @@
             margin-right: 0.1rem;
         }
 
-        /* ===== استجابة الهيدر ===== */
         @media (max-width: 768px) {
             .header-container {
                 padding: 0 0.75rem;
@@ -485,16 +493,22 @@
             overflow-y: auto;
             overflow-x: hidden;
         }
+        /* أيقونة التثبيت المتجاوبة */
+        .install-btn {
+            display: none;
+        }
+        .install-btn.show {
+            display: flex;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:text-slate-200 no-horizontal-scroll">
 
     <div id="toast" class="toast"></div>
 
-    <!-- ===== HEADER المُعاد تصميمه ===== -->
+    <!-- ===== HEADER ===== -->
     <header class="glass-header sticky top-0 z-50">
         <div class="header-container">
-            <!-- القسم الأيسر: القائمة + الشعار -->
             <div class="header-left">
                 <button onclick="toggleSidebar()" class="header-btn lg:hidden" aria-label="القائمة">
                     <i class="fas fa-bars"></i>
@@ -505,7 +519,6 @@
                 <span class="brand-text">Smart<span>PRO</span></span>
             </div>
 
-            <!-- القسم الأوسط: شريط البحث -->
             <div class="header-center">
                 <div class="search-wrapper">
                     <i class="fas fa-search"></i>
@@ -513,8 +526,10 @@
                 </div>
             </div>
 
-            <!-- القسم الأيمن: الأزرار -->
             <div class="header-right">
+                <button id="installButton" class="header-btn install-btn" onclick="installApp()" aria-label="تثبيت التطبيق">
+                    <i class="fas fa-download"></i>
+                </button>
                 <button onclick="toggleDarkMode()" class="header-btn" aria-label="الوضع الليلي">
                     <i class="fas fa-moon dark:fa-sun"></i>
                 </button>
@@ -535,628 +550,800 @@
     <div class="flex w-full max-w-full overflow-hidden">
 
         <!-- ===== SIDEBAR ===== -->
-        <aside id="sidebar"
-        class="w-64 sidebar bg-white dark:bg-slate-900 border-l dark:border-slate-800 p-4 hidden lg:flex flex-col sidebar-hidden flex-shrink-0">
-        <button onclick="createNewFolder()" class="flex items-center justify-center gap-2 w-full p-3.5 mb-6 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 dark:shadow-none">
-            <i class="fas fa-plus-circle"></i>
-            <span>مجلد جديد</span>
-        </button>
-
-        <div class="px-2 mb-4"><span class="text-[11px] font-black uppercase tracking-widest text-slate-400">مجلداتك</span></div>
-        <div id="folderList" class="space-y-1.5 overflow-y-auto flex-1">
-            <!-- تُملأ ديناميكياً -->
-        </div>
-    </aside>
-
-    <!-- ===== MAIN CONTENT ===== -->
-    <main class="flex-1 h-[calc(100vh-70px)] main-content p-4 md:p-6 lg:p-10 min-w-0">
-        <div class="main-inner max-w-6xl mx-auto">
-
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                <div class="min-w-0">
-                    <h2 id="currentFolderName" class="text-2xl md:text-4xl font-black text-slate-900 dark:text-white truncate">الملاحظات العامة</h2>
-                    <div id="stats" class="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full text-xs font-bold mt-2"></div>
-                </div>
-                <button onclick="createNewNote()" class="group bg-slate-900 dark:bg-blue-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-2xl font-bold shadow-xl hover:scale-105 transition-all flex items-center gap-3 whitespace-nowrap flex-shrink-0 text-sm md:text-base">
-                    <i class="fas fa-feather-alt group-hover:rotate-12 transition"></i>
-                    <span class="hidden xs:inline">كتابة ملاحظة جديدة</span>
-                    <span class="xs:hidden">جديد</span>
-                </button>
-            </div>
-
-            <div id="notesGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 w-full max-w-full">
-                <!-- تُملأ ديناميكياً -->
-            </div>
-
-        </div>
-    </main>
-</div>
-
-<!-- ===== MODAL: المحرر الاحترافي ===== -->
-<div id="editorModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xl hidden z-[60] flex items-center justify-center p-0 md:p-4 overflow-hidden">
-    <div class="bg-white dark:bg-slate-900 w-full max-w-5xl md:rounded-[2rem] shadow-2xl flex flex-col h-full md:h-[90vh] overflow-hidden max-h-screen">
-
-        <!-- رأس المحرر -->
-        <div class="px-4 md:px-6 py-3 md:py-4 border-b dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800/50 flex-shrink-0">
-            <div class="flex items-center gap-3 min-w-0">
-                <span class="text-[10px] md:text-xs font-bold text-slate-400 hidden sm:inline">حفظ في:</span>
-                <select id="editorFolderSelect" class="bg-white dark:bg-slate-700 border-none rounded-lg text-xs font-bold px-3 py-1.5 outline-none ring-1 ring-slate-200 dark:ring-slate-600 focus:ring-blue-500 max-w-[140px] md:max-w-[200px] truncate">
-                    <!-- خيارات ديناميكية -->
-                </select>
-            </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
-                <span id="wordCount" class="text-[10px] font-bold text-slate-400 hidden sm:block">0 كلمة</span>
-                <button onclick="closeModal('editorModal')" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full hover:bg-red-50 hover:text-red-500 transition">
-                    <i class="fas fa-times text-lg"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- منطقة الكتابة -->
-        <div class="flex-1 overflow-y-auto p-4 md:p-8 lg:p-16 custom-scrollbar">
-            <input id="editTitle" type="text" placeholder="عنوان الملاحظة الراقية..." class="editor-input editor-title dark:text-white" />
-            <textarea id="editContent" oninput="updateEditorStats()" placeholder="ابدأ رحلة الإبداع هنا..." class="editor-input editor-content dark:text-slate-300"></textarea>
-        </div>
-
-        <!-- شريط الأدوات -->
-        <div class="p-3 md:p-6 bg-white dark:bg-slate-900 border-t dark:border-slate-800 flex flex-col md:flex-row gap-3 md:gap-4 items-center justify-between flex-shrink-0">
-            <div class="flex flex-wrap justify-center gap-1.5 md:gap-2">
-                <button onclick="aiProcess('summarize')" class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black hover:bg-indigo-100 transition flex items-center gap-1.5">
-                    <i class="fas fa-align-right"></i> <span class="hidden xs:inline">تلخيص ذكي</span><span class="xs:hidden">تلخيص</span>
-                </button>
-                <button onclick="aiProcess('improve')" class="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black hover:bg-emerald-100 transition flex items-center gap-1.5">
-                    <i class="fas fa-magic"></i> <span class="hidden xs:inline">تحسين النص</span><span class="xs:hidden">تحسين</span>
-                </button>
-                <button onclick="aiProcess('translate')" class="bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black hover:bg-amber-100 transition flex items-center gap-1.5">
-                    <i class="fas fa-language"></i> <span class="hidden xs:inline">ترجمة فورية</span><span class="xs:hidden">ترجمة</span>
-                </button>
-            </div>
-            <button onclick="saveNote()" class="w-full md:w-auto bg-blue-600 text-white px-6 md:px-12 py-2.5 md:py-3.5 rounded-2xl font-black shadow-lg shadow-blue-200 dark:shadow-none hover:bg-blue-700 hover:scale-105 transition-all text-sm md:text-base">
-                حفظ الملاحظة
+        <aside id="sidebar" class="w-64 sidebar bg-white dark:bg-slate-900 border-l dark:border-slate-800 p-4 hidden lg:flex flex-col sidebar-hidden flex-shrink-0">
+            <button onclick="createNewFolder()" class="flex items-center justify-center gap-2 w-full p-3.5 mb-6 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 dark:shadow-none">
+                <i class="fas fa-plus-circle"></i>
+                <span>مجلد جديد</span>
             </button>
-        </div>
-    </div>
-</div>
+            <div class="px-2 mb-4"><span class="text-[11px] font-black uppercase tracking-widest text-slate-400">مجلداتك</span></div>
+            <div id="folderList" class="space-y-1.5 overflow-y-auto flex-1"></div>
+        </aside>
 
-<!-- ===== MODAL: الإعدادات ===== -->
-<div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md hidden z-[70] flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-[2.5rem] p-6 md:p-8 shadow-2xl my-4">
-        <div class="w-14 h-14 md:w-16 md:h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 mb-4 md:mb-6 mx-auto text-xl md:text-2xl">
-            <i class="fas fa-key"></i>
-        </div>
-        <h3 class="text-xl md:text-2xl font-black text-center mb-2">إعدادات المحرّك</h3>
-        <p class="text-slate-400 text-center text-sm mb-6 md:mb-8">أدخل مفتاح Gemini API وسيتم تشفيره وحفظه محلياً</p>
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="flex-1 h-[calc(100vh-70px)] main-content p-4 md:p-6 lg:p-10 min-w-0">
+            <div class="main-inner max-w-6xl mx-auto">
 
-        <div class="space-y-4">
-            <input id="apiKeyInput" type="password" placeholder="AI Key: AIzaSy..."
-            class="w-full p-3 md:p-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl outline-none ring-2 ring-transparent focus:ring-blue-500 transition font-mono text-sm" />
-            <p id="keyStatus" class="text-xs text-slate-400 text-center"></p>
-
-            <div class="flex flex-col sm:flex-row gap-3 pt-2">
-                <button onclick="saveSettings()" class="flex-1 bg-blue-600 text-white py-3 md:py-4 rounded-2xl font-bold hover:bg-blue-700 transition">حفظ المفتاح</button>
-                <button onclick="testApiKey()" class="flex-1 bg-emerald-50 text-emerald-600 py-3 md:py-4 rounded-2xl font-bold hover:bg-emerald-100 transition">اختبار</button>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-3">
-                <button onclick="closeModal('settingsModal')" class="flex-1 bg-slate-100 dark:bg-slate-700 py-3 md:py-4 rounded-2xl font-bold">إغلاق</button>
-                <button onclick="clearApiKey()" class="flex-1 bg-red-50 text-red-600 py-3 md:py-4 rounded-2xl font-bold hover:bg-red-100 transition">حذف المفتاح</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== AI LOADER ===== -->
-<div id="aiLoader" class="fixed inset-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md hidden z-[100] flex flex-col items-center justify-center">
-    <div class="loading-spinner"></div>
-    <p class="mt-6 font-black text-blue-600 animate-pulse tracking-widest uppercase text-sm text-center px-4">الذكاء الاصطناعي يحلل أفكارك...</p>
-</div>
-
-<script>
-    // ============================================================
-    //  التشفير
-    // ============================================================
-    const SECRET_KEY = 'smart-note-secret-2026';
-
-    function encryptData(text) {
-        return CryptoJS.AES.encrypt(text, SECRET_KEY).toString();
-    }
-
-    function decryptData(encrypted) {
-        try {
-            const bytes = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
-            return bytes.toString(CryptoJS.enc.Utf8);
-        } catch (_) { return null; }
-    }
-
-    // ============================================================
-    //  تنقية النصوص (منع XSS)
-    // ============================================================
-    function sanitizeText(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    function validateInput(text, maxLength = 100) {
-        if (!text) return null;
-        const trimmed = text.trim();
-        if (trimmed.length === 0 || trimmed.length > maxLength) return null;
-        const dangerous = /[<>{}[\]\\;'"`]/g;
-        if (dangerous.test(trimmed)) return null;
-        return trimmed;
-    }
-
-    // ============================================================
-    //  Toast
-    // ============================================================
-    function showToast(message, type = 'info', duration = 3000) {
-        const toast = document.getElementById('toast');
-        toast.className = 'toast toast-' + type;
-        toast.textContent = message;
-        toast.style.display = 'block';
-        clearTimeout(toast._timeout);
-        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, duration);
-    }
-
-    // ============================================================
-    //  الحالة الأساسية
-    // ============================================================
-    let state = JSON.parse(localStorage.getItem('smart_note_pro_v3')) || {
-        folders: [{ id: 'root', name: 'الملاحظات العامة', notes: [] }],
-        activeFolderId: 'root',
-        darkMode: false,
-        encryptedApiKey: ''
-    };
-    let currentNoteId = null;
-
-    // ============================================================
-    //  التهيئة
-    // ============================================================
-    function init() {
-        if (state.darkMode) document.body.classList.add('dark');
-        renderFolders();
-        renderNotes();
-        updateEditorFolderSelect();
-        updateConnectionStatus();
-        if (state.encryptedApiKey) {
-            const el = document.getElementById('keyStatus');
-            el.textContent = '✅ المفتاح محفوظ ومشفر';
-            el.className = 'text-xs text-emerald-600 text-center';
-        }
-    }
-
-    function saveToStore() {
-        localStorage.setItem('smart_note_pro_v3', JSON.stringify(state));
-        updateConnectionStatus();
-    }
-
-    function updateConnectionStatus() {
-        const status = document.getElementById('connectionStatus');
-        if (state.encryptedApiKey) {
-            status.className = 'status-badge';
-            status.innerHTML = '<i class="fas fa-circle" style="font-size:0.35rem;"></i> آمن';
-        } else {
-            status.className = 'status-badge off';
-            status.innerHTML = '<i class="fas fa-circle" style="font-size:0.35rem;"></i> غير مشفر';
-        }
-    }
-
-    // ============================================================
-    //  السايدبار
-    // ============================================================
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('sidebar-mobile-active');
-        sidebar.classList.toggle('sidebar-hidden');
-    }
-
-    // ============================================================
-    //  المجلدات
-    // ============================================================
-    function renderFolders() {
-        const list = document.getElementById('folderList');
-        list.innerHTML = '';
-        state.folders.forEach(f => {
-            const isActive = f.id === state.activeFolderId;
-            const safeName = sanitizeText(f.name);
-            list.innerHTML += `
-                    <div onclick="switchFolder('${f.id}')" class="group flex items-center justify-between p-3.5 rounded-2xl cursor-pointer transition-all ${isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500'}">
-                        <div class="flex items-center gap-3 overflow-hidden min-w-0">
-                            <i class="fas ${isActive ? 'fa-folder-open' : 'fa-folder'} text-sm flex-shrink-0"></i>
-                            <span class="text-sm font-bold truncate">${safeName}</span>
-                            <span class="text-[10px] opacity-60 flex-shrink-0">(${f.notes.length})</span>
-                        </div>
-                        <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                            <i onclick="renameFolder(event, '${f.id}')" class="fas fa-edit text-[10px] hover:text-yellow-400 cursor-pointer"></i>
-                            ${f.id !== 'root' ? `<i onclick="deleteFolder(event, '${f.id}')" class="fas fa-trash-alt text-[10px] hover:text-red-400 cursor-pointer"></i>` : ''}
-                        </div>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                    <div class="min-w-0">
+                        <h2 id="currentFolderName" class="text-2xl md:text-4xl font-black text-slate-900 dark:text-white truncate">الملاحظات العامة</h2>
+                        <div id="stats" class="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full text-xs font-bold mt-2"></div>
                     </div>
-                `;
-        });
-        updateEditorFolderSelect();
-    }
+                    <button onclick="createNewNote()" class="group bg-slate-900 dark:bg-blue-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-2xl font-bold shadow-xl hover:scale-105 transition-all flex items-center gap-3 whitespace-nowrap flex-shrink-0 text-sm md:text-base">
+                        <i class="fas fa-feather-alt group-hover:rotate-12 transition"></i>
+                        <span class="hidden xs:inline">كتابة ملاحظة جديدة</span>
+                        <span class="xs:hidden">جديد</span>
+                    </button>
+                </div>
 
-    function updateEditorFolderSelect() {
-        const select = document.getElementById('editorFolderSelect');
-        if (!select) return;
-        select.innerHTML = state.folders.map(f =>
-            `<option value="${f.id}" ${f.id === state.activeFolderId ? 'selected' : ''}>${sanitizeText(f.name)}</option>`
-        ).join('');
-    }
+                <div id="notesGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 w-full max-w-full"></div>
 
-    function switchFolder(id) {
-        state.activeFolderId = id;
-        const folder = state.folders.find(f => f.id === id);
-        document.getElementById('currentFolderName').innerText = folder ? folder.name : 'الملاحظات العامة';
-        saveToStore();
-        renderFolders();
-        renderNotes();
-        if (window.innerWidth < 1024) toggleSidebar();
-    }
+            </div>
+        </main>
+    </div>
 
-    function createNewFolder() {
-        const name = prompt("اسم المجلد الجديد:");
-        const validated = validateInput(name, 50);
-        if (validated) {
-            const newId = 'f-' + Date.now();
-            state.folders.push({ id: newId, name: validated, notes: [] });
-            saveToStore();
-            renderFolders();
-            showToast('✅ تم إنشاء المجلد', 'success');
-        } else if (name !== null) {
-            showToast('⚠️ اسم غير صالح', 'error');
+    <!-- ===== MODAL: المحرر ===== -->
+    <div id="editorModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xl hidden z-[60] flex items-center justify-center p-0 md:p-4 overflow-hidden">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-5xl md:rounded-[2rem] shadow-2xl flex flex-col h-full md:h-[90vh] overflow-hidden max-h-screen">
+
+            <div class="px-4 md:px-6 py-3 md:py-4 border-b dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800/50 flex-shrink-0">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="text-[10px] md:text-xs font-bold text-slate-400 hidden sm:inline">حفظ في:</span>
+                    <select id="editorFolderSelect" class="bg-white dark:bg-slate-700 border-none rounded-lg text-xs font-bold px-3 py-1.5 outline-none ring-1 ring-slate-200 dark:ring-slate-600 focus:ring-blue-500 max-w-[140px] md:max-w-[200px] truncate"></select>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <span id="wordCount" class="text-[10px] font-bold text-slate-400 hidden sm:block">0 كلمة</span>
+                    <button onclick="closeModal('editorModal')" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full hover:bg-red-50 hover:text-red-500 transition">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 lg:p-16 custom-scrollbar">
+                <input id="editTitle" type="text" placeholder="عنوان الملاحظة الراقية..." class="editor-input editor-title dark:text-white" />
+                <textarea id="editContent" oninput="updateEditorStats()" placeholder="ابدأ رحلة الإبداع هنا..." class="editor-input editor-content dark:text-slate-300"></textarea>
+            </div>
+
+            <div class="p-3 md:p-6 bg-white dark:bg-slate-900 border-t dark:border-slate-800 flex flex-col md:flex-row gap-3 md:gap-4 items-center justify-between flex-shrink-0">
+                <div class="flex flex-wrap justify-center gap-1.5 md:gap-2">
+                    <button onclick="aiProcess('summarize')" class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black hover:bg-indigo-100 transition flex items-center gap-1.5">
+                        <i class="fas fa-align-right"></i> <span class="hidden xs:inline">تلخيص ذكي</span><span class="xs:hidden">تلخيص</span>
+                    </button>
+                    <button onclick="aiProcess('improve')" class="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black hover:bg-emerald-100 transition flex items-center gap-1.5">
+                        <i class="fas fa-magic"></i> <span class="hidden xs:inline">تحسين النص</span><span class="xs:hidden">تحسين</span>
+                    </button>
+                    <button onclick="aiProcess('translate')" class="bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black hover:bg-amber-100 transition flex items-center gap-1.5">
+                        <i class="fas fa-language"></i> <span class="hidden xs:inline">ترجمة فورية</span><span class="xs:hidden">ترجمة</span>
+                    </button>
+                    <button onclick="copyEditorContent()" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center gap-1.5">
+                        <i class="fas fa-copy"></i> <span class="hidden xs:inline">نسخ النص</span><span class="xs:hidden">نسخ</span>
+                    </button>
+                </div>
+                <button onclick="saveNote()" class="w-full md:w-auto bg-blue-600 text-white px-6 md:px-12 py-2.5 md:py-3.5 rounded-2xl font-black shadow-lg shadow-blue-200 dark:shadow-none hover:bg-blue-700 hover:scale-105 transition-all text-sm md:text-base">
+                    حفظ الملاحظة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: الإعدادات ===== -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md hidden z-[70] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-[2.5rem] p-6 md:p-8 shadow-2xl my-4">
+            <div class="w-14 h-14 md:w-16 md:h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 mb-4 md:mb-6 mx-auto text-xl md:text-2xl">
+                <i class="fas fa-key"></i>
+            </div>
+            <h3 class="text-xl md:text-2xl font-black text-center mb-2">إعدادات المحرّك</h3>
+            <p class="text-slate-400 text-center text-sm mb-6 md:mb-8">أدخل مفتاح Gemini API وسيتم تشفيره وحفظه محلياً</p>
+
+            <div class="space-y-4">
+                <input id="apiKeyInput" type="password" placeholder="AI Key: AIzaSy..." class="w-full p-3 md:p-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl outline-none ring-2 ring-transparent focus:ring-blue-500 transition font-mono text-sm" />
+                <p id="keyStatus" class="text-xs text-slate-400 text-center"></p>
+
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button onclick="saveSettings()" class="flex-1 bg-blue-600 text-white py-3 md:py-4 rounded-2xl font-bold hover:bg-blue-700 transition">حفظ المفتاح</button>
+                    <button onclick="testApiKey()" class="flex-1 bg-emerald-50 text-emerald-600 py-3 md:py-4 rounded-2xl font-bold hover:bg-emerald-100 transition">اختبار</button>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button onclick="closeModal('settingsModal')" class="flex-1 bg-slate-100 dark:bg-slate-700 py-3 md:py-4 rounded-2xl font-bold">إغلاق</button>
+                    <button onclick="clearApiKey()" class="flex-1 bg-red-50 text-red-600 py-3 md:py-4 rounded-2xl font-bold hover:bg-red-100 transition">حذف المفتاح</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== AI LOADER ===== -->
+    <div id="aiLoader" class="fixed inset-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md hidden z-[100] flex flex-col items-center justify-center">
+        <div class="loading-spinner"></div>
+        <p class="mt-6 font-black text-blue-600 animate-pulse tracking-widest uppercase text-sm text-center px-4">الذكاء الاصطناعي يحلل أفكارك...</p>
+    </div>
+
+    <script>
+        // ============================================================
+        //  إنشاء أيقونة PWA باستخدام Canvas (عصرية وأنيقة)
+        // ============================================================
+        function generateIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // خلفية متدرجة
+            const grad = ctx.createLinearGradient(0, 0, size, size);
+            grad.addColorStop(0, '#2563eb');
+            grad.addColorStop(1, '#4f46e5');
+            ctx.fillStyle = grad;
+            ctx.shadowColor = 'rgba(0,0,0,0.2)';
+            ctx.shadowBlur = size * 0.1;
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, size * 0.22);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // رسم دفتر مفتوح
+            ctx.fillStyle = 'white';
+            const pad = size * 0.15;
+            const w = size - pad * 2;
+            const h = size * 0.55;
+            const x = pad;
+            const y = size * 0.3;
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 6);
+            ctx.fill();
+
+            // خطوط داخل الدفتر
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 4; i++) {
+                const yy = y + h * 0.2 + i * h * 0.2;
+                ctx.beginPath();
+                ctx.moveTo(x + 8, yy);
+                ctx.lineTo(x + w - 8, yy);
+                ctx.stroke();
+            }
+
+            // قلم صغير
+            ctx.fillStyle = '#1e293b';
+            const penX = x + w * 0.8;
+            const penY = y + h * 0.1;
+            ctx.beginPath();
+            ctx.moveTo(penX, penY);
+            ctx.lineTo(penX + 6, penY - 18);
+            ctx.lineTo(penX + 12, penY - 14);
+            ctx.fill();
+
+            // عقل/نجمة صغيرة
+            ctx.fillStyle = '#f59e0b';
+            ctx.font = `${size * 0.22}px "Font Awesome 6 Free"`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('\uf5dc', size * 0.5, size * 0.15); // أيقونة brain
+
+            return canvas.toDataURL('image/png');
         }
-    }
 
-    function renameFolder(e, id) {
-        e.stopPropagation();
-        const folder = state.folders.find(f => f.id === id);
-        if (!folder) return;
-        const newName = prompt("تعديل اسم المجلد:", folder.name);
-        const validated = validateInput(newName, 50);
-        if (validated) {
-            folder.name = validated;
-            if (state.activeFolderId === id) document.getElementById('currentFolderName').innerText = folder.name;
-            saveToStore();
-            renderFolders();
-            showToast('✅ تم التعديل', 'success');
-        } else if (newName !== null) {
-            showToast('⚠️ اسم غير صالح', 'error');
+        // ============================================================
+        //  توليد المانيفست ديناميكياً
+        // ============================================================
+        function generateManifest() {
+            const icon192 = generateIcon(192);
+            const icon512 = generateIcon(512);
+
+            const manifest = {
+                name: 'Smart Note Pro',
+                short_name: 'SmartNote',
+                description: 'تطبيق ملاحظات احترافي مع ذكاء اصطناعي',
+                start_url: '.',
+                display: 'standalone',
+                background_color: '#f1f5f9',
+                theme_color: '#2563eb',
+                orientation: 'portrait',
+                icons: [
+                    { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any' },
+                    { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any' },
+                    { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'maskable' }
+                ]
+            };
+            return manifest;
         }
-    }
 
-    function deleteFolder(e, id) {
-        e.stopPropagation();
-        if (confirm('سيتم حذف المجلد ومحتوياته بالكامل؟')) {
-            state.folders = state.folders.filter(f => f.id !== id);
-            if (state.activeFolderId === id) state.activeFolderId = 'root';
+        // ============================================================
+        //  إنشاء Service Worker ديناميكياً (كـ Blob)
+        // ============================================================
+        function generateServiceWorker() {
+            return `
+                self.addEventListener('install', e => {
+                    e.waitUntil(
+                        caches.open('smart-note-v3').then(cache => {
+                            return cache.addAll([
+                                './',
+                                './index.html',
+                                // نضيف الملف الحالي (سيتم حفظه)
+                            ]);
+                        })
+                    );
+                });
+                self.addEventListener('fetch', e => {
+                    e.respondWith(
+                        caches.match(e.request).then(res => res || fetch(e.request))
+                    );
+                });
+            `;
+        }
+
+        // ============================================================
+        //  تسجيل PWA
+        // ============================================================
+        async function registerPWA() {
+            try {
+                // 1. توليد المانيفست وربطه
+                const manifestData = generateManifest();
+                const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+                const manifestURL = URL.createObjectURL(manifestBlob);
+                const link = document.createElement('link');
+                link.rel = 'manifest';
+                link.href = manifestURL;
+                document.head.appendChild(link);
+
+                // 2. توليد Service Worker
+                const swCode = generateServiceWorker();
+                const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                const swURL = URL.createObjectURL(swBlob);
+
+                // تسجيل الـ worker
+                const registration = await navigator.serviceWorker.register(swURL);
+                console.log('✅ Service Worker مسجل بنجاح', registration);
+
+                // 3. إظهار زر التثبيت
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    window.deferredPrompt = e;
+                    document.getElementById('installButton').classList.add('show');
+                });
+
+                window.addEventListener('appinstalled', () => {
+                    document.getElementById('installButton').classList.remove('show');
+                    showToast('✅ تم تثبيت التطبيق بنجاح!', 'success');
+                });
+
+            } catch (error) {
+                console.warn('⚠️ PWA غير مدعوم في هذا المتصفح', error);
+            }
+        }
+
+        // ============================================================
+        //  دالة التثبيت
+        // ============================================================
+        function installApp() {
+            if (window.deferredPrompt) {
+                window.deferredPrompt.prompt();
+                window.deferredPrompt.userChoice.then(choice => {
+                    if (choice.outcome === 'accepted') {
+                        showToast('✅ تم تثبيت التطبيق', 'success');
+                    } else {
+                        showToast('❌ تم إلغاء التثبيت', 'info');
+                    }
+                    window.deferredPrompt = null;
+                    document.getElementById('installButton').classList.remove('show');
+                });
+            } else {
+                showToast('⚠️ التثبيت غير متاح حالياً', 'error');
+            }
+        }
+
+        // ============================================================
+        //  باقي الكود (التشفير، الحالة، المجلدات، الملاحظات، AI، إلخ)
+        // ============================================================
+        const SECRET_KEY = 'smart-note-secret-2026';
+
+        function encryptData(text) {
+            return CryptoJS.AES.encrypt(text, SECRET_KEY).toString();
+        }
+
+        function decryptData(encrypted) {
+            try {
+                const bytes = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
+                return bytes.toString(CryptoJS.enc.Utf8);
+            } catch (_) { return null; }
+        }
+
+        function sanitizeText(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function validateInput(text, maxLength = 100) {
+            if (!text) return null;
+            const trimmed = text.trim();
+            if (trimmed.length === 0 || trimmed.length > maxLength) return null;
+            const dangerous = /[<>{}[\]\\;'"`]/g;
+            if (dangerous.test(trimmed)) return null;
+            return trimmed;
+        }
+
+        function showToast(message, type = 'info', duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.className = 'toast toast-' + type;
+            toast.textContent = message;
+            toast.style.display = 'block';
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, duration);
+        }
+
+        let state = JSON.parse(localStorage.getItem('smart_note_pro_v3')) || {
+            folders: [{ id: 'root', name: 'الملاحظات العامة', notes: [] }],
+            activeFolderId: 'root',
+            darkMode: false,
+            encryptedApiKey: ''
+        };
+        let currentNoteId = null;
+
+        function init() {
+            if (state.darkMode) document.body.classList.add('dark');
+            renderFolders();
+            renderNotes();
+            updateEditorFolderSelect();
+            updateConnectionStatus();
+            if (state.encryptedApiKey) {
+                const el = document.getElementById('keyStatus');
+                el.textContent = '✅ المفتاح محفوظ ومشفر';
+                el.className = 'text-xs text-emerald-600 text-center';
+            }
+            // تسجيل PWA بعد تحميل الصفحة
+            if ('serviceWorker' in navigator) {
+                registerPWA();
+            }
+        }
+
+        function saveToStore() {
+            localStorage.setItem('smart_note_pro_v3', JSON.stringify(state));
+            updateConnectionStatus();
+        }
+
+        function updateConnectionStatus() {
+            const status = document.getElementById('connectionStatus');
+            if (state.encryptedApiKey) {
+                status.className = 'status-badge';
+                status.innerHTML = '<i class="fas fa-circle" style="font-size:0.35rem;"></i> آمن';
+            } else {
+                status.className = 'status-badge off';
+                status.innerHTML = '<i class="fas fa-circle" style="font-size:0.35rem;"></i> غير مشفر';
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('sidebar-mobile-active');
+            sidebar.classList.toggle('sidebar-hidden');
+        }
+
+        function renderFolders() {
+            const list = document.getElementById('folderList');
+            list.innerHTML = '';
+            state.folders.forEach(f => {
+                const isActive = f.id === state.activeFolderId;
+                const safeName = sanitizeText(f.name);
+                list.innerHTML += `
+                        <div onclick="switchFolder('${f.id}')" class="group flex items-center justify-between p-3.5 rounded-2xl cursor-pointer transition-all ${isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500'}">
+                            <div class="flex items-center gap-3 overflow-hidden min-w-0">
+                                <i class="fas ${isActive ? 'fa-folder-open' : 'fa-folder'} text-sm flex-shrink-0"></i>
+                                <span class="text-sm font-bold truncate">${safeName}</span>
+                                <span class="text-[10px] opacity-60 flex-shrink-0">(${f.notes.length})</span>
+                            </div>
+                            <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                <i onclick="renameFolder(event, '${f.id}')" class="fas fa-edit text-[10px] hover:text-yellow-400 cursor-pointer"></i>
+                                ${f.id !== 'root' ? `<i onclick="deleteFolder(event, '${f.id}')" class="fas fa-trash-alt text-[10px] hover:text-red-400 cursor-pointer"></i>` : ''}
+                            </div>
+                        </div>
+                    `;
+            });
+            updateEditorFolderSelect();
+        }
+
+        function updateEditorFolderSelect() {
+            const select = document.getElementById('editorFolderSelect');
+            if (!select) return;
+            select.innerHTML = state.folders.map(f =>
+                `<option value="${f.id}" ${f.id === state.activeFolderId ? 'selected' : ''}>${sanitizeText(f.name)}</option>`
+            ).join('');
+        }
+
+        function switchFolder(id) {
+            state.activeFolderId = id;
+            const folder = state.folders.find(f => f.id === id);
+            document.getElementById('currentFolderName').innerText = folder ? folder.name : 'الملاحظات العامة';
             saveToStore();
             renderFolders();
             renderNotes();
-            showToast('🗑️ تم الحذف', 'info');
-        }
-    }
-
-    // ============================================================
-    //  الملاحظات
-    // ============================================================
-    function renderNotes(filterText = "") {
-        const grid = document.getElementById('notesGrid');
-        const folder = state.folders.find(f => f.id === state.activeFolderId);
-        if (!folder) return;
-
-        grid.innerHTML = '';
-        const safeFilter = filterText ? sanitizeText(filterText) : '';
-
-        const filteredNotes = folder.notes.filter(n =>
-            n.title.toLowerCase().includes(safeFilter.toLowerCase()) ||
-            n.content.toLowerCase().includes(safeFilter.toLowerCase())
-        );
-        document.getElementById('stats').innerText = `${filteredNotes.length} ملاحظة محفوظة`;
-
-        if (filteredNotes.length === 0) {
-            grid.innerHTML = `
-                    <div class="col-span-full text-center py-20">
-                        <i class="fas fa-inbox text-6xl text-slate-300 dark:text-slate-600 mb-4"></i>
-                        <p class="text-slate-400">لا توجد ملاحظات${safeFilter ? ' مطابقة للبحث' : ''}</p>
-                    </div>
-                `;
-            return;
+            if (window.innerWidth < 1024) toggleSidebar();
         }
 
-        filteredNotes.forEach(note => {
-            const safeTitle = sanitizeText(note.title);
-            const safeContent = sanitizeText(note.content || 'لا يوجد محتوى بعد...');
-            grid.innerHTML += `
-                    <div onclick="editNote('${note.id}')" class="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm note-card cursor-pointer relative group border border-slate-100 dark:border-slate-700">
-                        <div class="h-2 w-12 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4"></div>
-                        <h3 class="font-black text-xl mb-3 line-clamp-2 leading-snug">${safeTitle}</h3>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm line-clamp-3 leading-relaxed mb-6">${safeContent}</p>
-                        <div class="flex justify-between items-center pt-4 border-t dark:border-slate-700/50">
-                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${sanitizeText(note.date)}</span>
-                            <button onclick="deleteNote(event, '${note.id}')" class="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white">
-                                <i class="fas fa-trash-alt text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-        });
-    }
-
-    function updateEditorStats() {
-        const text = document.getElementById('editContent').value;
-        const count = text.trim() ? text.trim().split(/\s+/).length : 0;
-        document.getElementById('wordCount').innerText = `${count} كلمة`;
-    }
-
-    function createNewNote() {
-        currentNoteId = null;
-        document.getElementById('editTitle').value = '';
-        document.getElementById('editContent').value = '';
-        document.getElementById('editorFolderSelect').value = state.activeFolderId;
-        updateEditorStats();
-        document.getElementById('editorModal').classList.remove('hidden');
-    }
-
-    function editNote(id) {
-        const folder = state.folders.find(f => f.id === state.activeFolderId);
-        if (!folder) return;
-        const note = folder.notes.find(n => n.id === id);
-        if (!note) return;
-        currentNoteId = id;
-        document.getElementById('editTitle').value = note.title;
-        document.getElementById('editContent').value = note.content;
-        document.getElementById('editorFolderSelect').value = state.activeFolderId;
-        updateEditorStats();
-        document.getElementById('editorModal').classList.remove('hidden');
-    }
-
-    function saveNote() {
-        let title = document.getElementById('editTitle').value || 'ملاحظة بدون عنوان';
-        const content = document.getElementById('editContent').value;
-        const targetFolderId = document.getElementById('editorFolderSelect').value;
-
-        title = validateInput(title, 100) || 'ملاحظة بدون عنوان';
-
-        if (currentNoteId) {
-            const oldFolder = state.folders.find(f => f.id === state.activeFolderId);
-            if (!oldFolder) return;
-            const noteIndex = oldFolder.notes.findIndex(n => n.id === currentNoteId);
-            if (noteIndex === -1) return;
-            const noteData = oldFolder.notes[noteIndex];
-
-            noteData.title = title;
-            noteData.content = content;
-
-            if (targetFolderId !== state.activeFolderId) {
-                oldFolder.notes.splice(noteIndex, 1);
-                const targetFolder = state.folders.find(f => f.id === targetFolderId);
-                if (targetFolder) targetFolder.notes.unshift(noteData);
+        function createNewFolder() {
+            const name = prompt("اسم المجلد الجديد:");
+            const validated = validateInput(name, 50);
+            if (validated) {
+                const newId = 'f-' + Date.now();
+                state.folders.push({ id: newId, name: validated, notes: [] });
+                saveToStore();
+                renderFolders();
+                showToast('✅ تم إنشاء المجلد', 'success');
+            } else if (name !== null) {
+                showToast('⚠️ اسم غير صالح', 'error');
             }
-        } else {
-            const targetFolder = state.folders.find(f => f.id === targetFolderId);
-            if (!targetFolder) return;
-            targetFolder.notes.unshift({
-                id: 'n-' + Date.now(),
-                title: title,
-                content: content,
-                date: new Date().toLocaleDateString('ar-EG')
-            });
         }
 
-        saveToStore();
-        closeModal('editorModal');
-        renderNotes();
-        showToast('✅ تم حفظ الملاحظة', 'success');
-    }
+        function renameFolder(e, id) {
+            e.stopPropagation();
+            const folder = state.folders.find(f => f.id === id);
+            if (!folder) return;
+            const newName = prompt("تعديل اسم المجلد:", folder.name);
+            const validated = validateInput(newName, 50);
+            if (validated) {
+                folder.name = validated;
+                if (state.activeFolderId === id) document.getElementById('currentFolderName').innerText = folder.name;
+                saveToStore();
+                renderFolders();
+                showToast('✅ تم التعديل', 'success');
+            } else if (newName !== null) {
+                showToast('⚠️ اسم غير صالح', 'error');
+            }
+        }
 
-    function deleteNote(e, id) {
-        e.stopPropagation();
-        if (confirm('حذف هذه الملاحظة نهائياً؟')) {
+        function deleteFolder(e, id) {
+            e.stopPropagation();
+            if (confirm('سيتم حذف المجلد ومحتوياته بالكامل؟')) {
+                state.folders = state.folders.filter(f => f.id !== id);
+                if (state.activeFolderId === id) state.activeFolderId = 'root';
+                saveToStore();
+                renderFolders();
+                renderNotes();
+                showToast('🗑️ تم الحذف', 'info');
+            }
+        }
+
+        function renderNotes(filterText = "") {
+            const grid = document.getElementById('notesGrid');
             const folder = state.folders.find(f => f.id === state.activeFolderId);
             if (!folder) return;
-            folder.notes = folder.notes.filter(n => n.id !== id);
-            saveToStore();
-            renderNotes();
-            showToast('🗑️ تم الحذف', 'info');
-        }
-    }
 
-    function searchNotes() {
-        const txt = document.getElementById('searchInput').value;
-        renderNotes(txt);
-    }
+            grid.innerHTML = '';
+            const safeFilter = filterText ? sanitizeText(filterText) : '';
 
-    // ============================================================
-    //  الذكاء الاصطناعي
-    // ============================================================
-    function getApiKey() {
-        if (!state.encryptedApiKey) {
-            showToast('⚠️ الرجاء إدخال مفتاح API في الإعدادات', 'error');
-            openSettings();
-            return null;
-        }
-        const decrypted = decryptData(state.encryptedApiKey);
-        if (!decrypted) {
-            showToast('⚠️ خطأ في فك التشفير', 'error');
-            return null;
-        }
-        return decrypted;
-    }
-
-    async function aiProcess(type) {
-        const apiKey = getApiKey();
-        if (!apiKey) return;
-
-        const content = document.getElementById('editContent').value;
-        if (!content) {
-            showToast('⚠️ الرجاء كتابة محتوى أولاً', 'error');
-            return;
-        }
-
-        document.getElementById('aiLoader').classList.remove('hidden');
-
-        let promptText = "";
-        let actionLabel = "";
-        if (type === 'summarize') {
-            promptText = "قم بتلخيص هذا النص بشكل نقاط مركزة واحترافية بالعربية:";
-            actionLabel = "التلخيص";
-        }
-        if (type === 'improve') {
-            promptText = "أعد صياغة هذا النص بأسلوب أدبي بليغ ومنظم مع الحفاظ على المعنى:";
-            actionLabel = "التحسين";
-        }
-        if (type === 'translate') {
-            promptText = "ترجم النص التالي إلى العربية الفصحى بدقة:";
-            actionLabel = "الترجمة";
-        }
-
-        try {
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: promptText + "\n\n" + content }] }]
-                    })
-                }
+            const filteredNotes = folder.notes.filter(n =>
+                n.title.toLowerCase().includes(safeFilter.toLowerCase()) ||
+                n.content.toLowerCase().includes(safeFilter.toLowerCase())
             );
+            document.getElementById('stats').innerText = `${filteredNotes.length} ملاحظة محفوظة`;
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error?.message || 'فشل الاتصال');
-            }
-
-            const data = await response.json();
-            const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-            if (!aiText) {
-                showToast('⚠️ لم يتم الحصول على رد', 'error');
+            if (filteredNotes.length === 0) {
+                grid.innerHTML = `
+                        <div class="col-span-full text-center py-20">
+                            <i class="fas fa-inbox text-6xl text-slate-300 dark:text-slate-600 mb-4"></i>
+                            <p class="text-slate-400">لا توجد ملاحظات${safeFilter ? ' مطابقة للبحث' : ''}</p>
+                        </div>
+                    `;
                 return;
             }
 
-            if (confirm(`✅ تم ${actionLabel} بنجاح!\n\nهل تريد اعتماد النص المقترح؟`)) {
-                document.getElementById('editContent').value = aiText;
-                updateEditorStats();
-                showToast('✅ تم تطبيق النص الجديد', 'success');
-            }
-
-        } catch (error) {
-            console.error('AI Error:', error);
-            showToast(`⚠️ فشل ${actionLabel}: ${error.message}`, 'error');
-        } finally {
-            document.getElementById('aiLoader').classList.add('hidden');
-        }
-    }
-
-    // ============================================================
-    //  الإعدادات
-    // ============================================================
-    function saveSettings() {
-        const key = document.getElementById('apiKeyInput').value.trim();
-        if (!key || key.length < 10) {
-            showToast('⚠️ مفتاح غير صالح', 'error');
-            return;
+            filteredNotes.forEach(note => {
+                const safeTitle = sanitizeText(note.title);
+                const safeContent = sanitizeText(note.content || 'لا يوجد محتوى بعد...');
+                grid.innerHTML += `
+                        <div onclick="editNote('${note.id}')" class="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm note-card cursor-pointer relative group border border-slate-100 dark:border-slate-700">
+                            <div class="h-2 w-12 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4"></div>
+                            <h3 class="font-black text-xl mb-3 line-clamp-2 leading-snug">${safeTitle}</h3>
+                            <p class="text-slate-500 dark:text-slate-400 text-sm line-clamp-3 leading-relaxed mb-6">${safeContent}</p>
+                            <div class="flex justify-between items-center pt-4 border-t dark:border-slate-700/50">
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${sanitizeText(note.date)}</span>
+                                <button onclick="deleteNote(event, '${note.id}')" class="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white">
+                                    <i class="fas fa-trash-alt text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+            });
         }
 
-        state.encryptedApiKey = encryptData(key);
-        saveToStore();
-        document.getElementById('keyStatus').textContent = '✅ تم حفظ المفتاح وتشفيره';
-        document.getElementById('keyStatus').className = 'text-xs text-emerald-600 text-center';
-        closeModal('settingsModal');
-        showToast('✅ تم حفظ المفتاح المشفر', 'success');
-        updateConnectionStatus();
-    }
-
-    async function testApiKey() {
-        const keyInput = document.getElementById('apiKeyInput').value.trim();
-        const keyToTest = keyInput || decryptData(state.encryptedApiKey);
-
-        if (!keyToTest) {
-            showToast('⚠️ الرجاء إدخال مفتاح أولاً', 'error');
-            return;
+        function updateEditorStats() {
+            const text = document.getElementById('editContent').value;
+            const count = text.trim() ? text.trim().split(/\s+/).length : 0;
+            document.getElementById('wordCount').innerText = `${count} كلمة`;
         }
 
-        document.getElementById('aiLoader').classList.remove('hidden');
+        function createNewNote() {
+            currentNoteId = null;
+            document.getElementById('editTitle').value = '';
+            document.getElementById('editContent').value = '';
+            document.getElementById('editorFolderSelect').value = state.activeFolderId;
+            updateEditorStats();
+            document.getElementById('editorModal').classList.remove('hidden');
+        }
 
-        try {
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models?key=${keyToTest}`,
-                { method: 'GET' }
-            );
+        function editNote(id) {
+            const folder = state.folders.find(f => f.id === state.activeFolderId);
+            if (!folder) return;
+            const note = folder.notes.find(n => n.id === id);
+            if (!note) return;
+            currentNoteId = id;
+            document.getElementById('editTitle').value = note.title;
+            document.getElementById('editContent').value = note.content;
+            document.getElementById('editorFolderSelect').value = state.activeFolderId;
+            updateEditorStats();
+            document.getElementById('editorModal').classList.remove('hidden');
+        }
 
-            if (response.ok) {
-                document.getElementById('keyStatus').textContent = '✅ المفتاح صحيح ويعمل';
-                document.getElementById('keyStatus').className = 'text-xs text-emerald-600 text-center';
-                showToast('✅ المفتاح صحيح!', 'success');
+        function saveNote() {
+            let title = document.getElementById('editTitle').value || 'ملاحظة بدون عنوان';
+            const content = document.getElementById('editContent').value;
+            const targetFolderId = document.getElementById('editorFolderSelect').value;
+
+            title = validateInput(title, 100) || 'ملاحظة بدون عنوان';
+
+            if (currentNoteId) {
+                const oldFolder = state.folders.find(f => f.id === state.activeFolderId);
+                if (!oldFolder) return;
+                const noteIndex = oldFolder.notes.findIndex(n => n.id === currentNoteId);
+                if (noteIndex === -1) return;
+                const noteData = oldFolder.notes[noteIndex];
+
+                noteData.title = title;
+                noteData.content = content;
+
+                if (targetFolderId !== state.activeFolderId) {
+                    oldFolder.notes.splice(noteIndex, 1);
+                    const targetFolder = state.folders.find(f => f.id === targetFolderId);
+                    if (targetFolder) targetFolder.notes.unshift(noteData);
+                }
             } else {
-                document.getElementById('keyStatus').textContent = '❌ المفتاح غير صالح';
-                document.getElementById('keyStatus').className = 'text-xs text-red-600 text-center';
-                showToast('❌ المفتاح غير صالح', 'error');
+                const targetFolder = state.folders.find(f => f.id === targetFolderId);
+                if (!targetFolder) return;
+                targetFolder.notes.unshift({
+                    id: 'n-' + Date.now(),
+                    title: title,
+                    content: content,
+                    date: new Date().toLocaleDateString('ar-EG')
+                });
             }
-        } catch (error) {
-            showToast('⚠️ فشل الاتصال للتحقق', 'error');
-        } finally {
-            document.getElementById('aiLoader').classList.add('hidden');
-        }
-    }
 
-    function clearApiKey() {
-        if (confirm('هل تريد حذف المفتاح المشفر؟')) {
-            state.encryptedApiKey = '';
             saveToStore();
-            document.getElementById('apiKeyInput').value = '';
-            document.getElementById('keyStatus').textContent = '🗑️ تم حذف المفتاح';
-            document.getElementById('keyStatus').className = 'text-xs text-slate-400 text-center';
-            showToast('🗑️ تم حذف المفتاح', 'info');
-            updateConnectionStatus();
+            closeModal('editorModal');
+            renderNotes();
+            showToast('✅ تم حفظ الملاحظة', 'success');
+        }
+
+        function deleteNote(e, id) {
+            e.stopPropagation();
+            if (confirm('حذف هذه الملاحظة نهائياً؟')) {
+                const folder = state.folders.find(f => f.id === state.activeFolderId);
+                if (!folder) return;
+                folder.notes = folder.notes.filter(n => n.id !== id);
+                saveToStore();
+                renderNotes();
+                showToast('🗑️ تم الحذف', 'info');
+            }
+        }
+
+        function searchNotes() {
+            const txt = document.getElementById('searchInput').value;
+            renderNotes(txt);
+        }
+
+        function copyEditorContent() {
+            const content = document.getElementById('editContent').value;
+            if (!content) {
+                showToast('⚠️ لا يوجد نص لنسخه', 'error');
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(content).then(() => {
+                    showToast('✅ تم نسخ النص إلى الحافظة', 'success');
+                }).catch(() => {
+                    const textarea = document.getElementById('editContent');
+                    textarea.select();
+                    document.execCommand('copy');
+                    showToast('✅ تم نسخ النص', 'success');
+                });
+            } else {
+                const textarea = document.getElementById('editContent');
+                textarea.select();
+                document.execCommand('copy');
+                showToast('✅ تم نسخ النص', 'success');
+            }
+        }
+
+        function getApiKey() {
+            if (!state.encryptedApiKey) {
+                showToast('⚠️ الرجاء إدخال مفتاح API في الإعدادات', 'error');
+                openSettings();
+                return null;
+            }
+            const decrypted = decryptData(state.encryptedApiKey);
+            if (!decrypted) {
+                showToast('⚠️ خطأ في فك التشفير', 'error');
+                return null;
+            }
+            return decrypted;
+        }
+
+        async function aiProcess(type) {
+            const apiKey = getApiKey();
+            if (!apiKey) return;
+
+            const content = document.getElementById('editContent').value;
+            if (!content) {
+                showToast('⚠️ الرجاء كتابة محتوى أولاً', 'error');
+                return;
+            }
+
+            document.getElementById('aiLoader').classList.remove('hidden');
+
+            let promptText = "";
+            let actionLabel = "";
+            if (type === 'summarize') {
+                promptText = "قم بتلخيص هذا النص بشكل نقاط مركزة واحترافية بالعربية:";
+                actionLabel = "التلخيص";
+            } else if (type === 'improve') {
+                promptText = "أعد صياغة هذا النص بأسلوب أدبي بليغ ومنظم مع الحفاظ على المعنى:";
+                actionLabel = "التحسين";
+            } else if (type === 'translate') {
+                promptText = "ترجم النص التالي إلى العربية الفصحى بدقة:";
+                actionLabel = "الترجمة";
+            }
+
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: promptText + "\n\n" + content }] }]
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || 'فشل الاتصال');
+                }
+
+                const data = await response.json();
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+                if (!aiText) {
+                    showToast('⚠️ لم يتم الحصول على رد', 'error');
+                    return;
+                }
+
+                if (confirm(`✅ تم ${actionLabel} بنجاح!\n\nهل تريد اعتماد النص المقترح؟`)) {
+                    document.getElementById('editContent').value = aiText;
+                    updateEditorStats();
+                    showToast('✅ تم تطبيق النص الجديد', 'success');
+                }
+
+            } catch (error) {
+                console.error('AI Error:', error);
+                showToast(`⚠️ فشل ${actionLabel}: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('aiLoader').classList.add('hidden');
+            }
+        }
+
+        function saveSettings() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (!key || key.length < 10) {
+                showToast('⚠️ مفتاح غير صالح', 'error');
+                return;
+            }
+
+            state.encryptedApiKey = encryptData(key);
+            saveToStore();
+            document.getElementById('keyStatus').textContent = '✅ تم حفظ المفتاح وتشفيره';
+            document.getElementById('keyStatus').className = 'text-xs text-emerald-600 text-center';
             closeModal('settingsModal');
+            showToast('✅ تم حفظ المفتاح المشفر', 'success');
+            updateConnectionStatus();
         }
-    }
 
-    // ============================================================
-    //  عام
-    // ============================================================
-    function toggleDarkMode() {
-        state.darkMode = !state.darkMode;
-        document.body.classList.toggle('dark');
-        saveToStore();
-    }
+        async function testApiKey() {
+            const keyInput = document.getElementById('apiKeyInput').value.trim();
+            const keyToTest = keyInput || decryptData(state.encryptedApiKey);
 
-    function exportData() {
-        const dataToExport = {
-            folders: state.folders,
-            exportedAt: new Date().toISOString(),
-            version: '3.0.0'
-        };
-        const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `smart_notes_backup_${new Date().toISOString().slice(0, 10)}.json`;
-        a.click();
-        showToast('📥 تم تصدير البيانات', 'success');
-    }
+            if (!keyToTest) {
+                showToast('⚠️ الرجاء إدخال مفتاح أولاً', 'error');
+                return;
+            }
 
-    function openSettings() {
-        document.getElementById('settingsModal').classList.remove('hidden');
-        if (state.encryptedApiKey) {
-            document.getElementById('apiKeyInput').value = '';
-            document.getElementById('apiKeyInput').placeholder = '🔒 مفتاح مشفر (للتعديل اكتب جديداً)';
+            document.getElementById('aiLoader').classList.remove('hidden');
+
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models?key=${keyToTest}`,
+                    { method: 'GET' }
+                );
+
+                if (response.ok) {
+                    document.getElementById('keyStatus').textContent = '✅ المفتاح صحيح ويعمل';
+                    document.getElementById('keyStatus').className = 'text-xs text-emerald-600 text-center';
+                    showToast('✅ المفتاح صحيح!', 'success');
+                } else {
+                    document.getElementById('keyStatus').textContent = '❌ المفتاح غير صالح';
+                    document.getElementById('keyStatus').className = 'text-xs text-red-600 text-center';
+                    showToast('❌ المفتاح غير صالح', 'error');
+                }
+            } catch (error) {
+                showToast('⚠️ فشل الاتصال للتحقق', 'error');
+            } finally {
+                document.getElementById('aiLoader').classList.add('hidden');
+            }
         }
-    }
 
-    function closeModal(id) {
-        document.getElementById(id).classList.add('hidden');
-    }
+        function clearApiKey() {
+            if (confirm('هل تريد حذف المفتاح المشفر؟')) {
+                state.encryptedApiKey = '';
+                saveToStore();
+                document.getElementById('apiKeyInput').value = '';
+                document.getElementById('keyStatus').textContent = '🗑️ تم حذف المفتاح';
+                document.getElementById('keyStatus').className = 'text-xs text-slate-400 text-center';
+                showToast('🗑️ تم حذف المفتاح', 'info');
+                updateConnectionStatus();
+                closeModal('settingsModal');
+            }
+        }
 
-    // ============================================================
-    //  بدء التشغيل
-    // ============================================================
-    init();
-    console.log('🚀 Smart Note Pro v3.0 - جميع البيانات مشفرة محلياً');
-    console.log('🔒 المفتاح ' + (state.encryptedApiKey ? 'محفوظ ✓' : 'غير موجود'));
-    console.log('📝 عدد المجلدات: ' + state.folders.length);
-</script>
+        function toggleDarkMode() {
+            state.darkMode = !state.darkMode;
+            document.body.classList.toggle('dark');
+            saveToStore();
+        }
+
+        function exportData() {
+            const dataToExport = {
+                folders: state.folders,
+                exportedAt: new Date().toISOString(),
+                version: '3.0.0'
+            };
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `smart_notes_backup_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            showToast('📥 تم تصدير البيانات', 'success');
+        }
+
+        function openSettings() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+            if (state.encryptedApiKey) {
+                document.getElementById('apiKeyInput').value = '';
+                document.getElementById('apiKeyInput').placeholder = '🔒 مفتاح مشفر (للتعديل اكتب جديداً)';
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // دالة roundRect للـ Canvas (polyfill)
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (r > w / 2) r = w / 2;
+                if (r > h / 2) r = h / 2;
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                return this;
+            };
+        }
+
+        // ============================================================
+        //  بدء التشغيل
+        // ============================================================
+        init();
+        console.log('🚀 Smart Note Pro v3.0 - جميع البيانات مشفرة محلياً');
+        console.log('🔒 المفتاح ' + (state.encryptedApiKey ? 'محفوظ ✓' : 'غير موجود'));
+        console.log('📝 عدد المجلدات: ' + state.folders.length);
+    </script>
 </body>
 </html>
