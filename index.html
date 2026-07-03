@@ -17,7 +17,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js">
     </script>
     <style>
-        /* ===== جميع الأنماط السابقة ===== */
+        /* ===== جميع الأنماط السابقة (تم تحسينها) ===== */
         *,
         *::before,
         *::after {
@@ -570,6 +570,20 @@
             gap: 0.5rem;
             flex-wrap: wrap;
         }
+
+        /* ===== تحسينات حفظ البيانات ===== */
+        .save-indicator {
+            font-size: 0.7rem;
+            background: #10b981;
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 100px;
+            display: none;
+            font-weight: 700;
+        }
+        .save-indicator.show {
+            display: inline-block;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:text-slate-200 no-horizontal-scroll">
@@ -595,6 +609,7 @@
                 </div>
             </div>
             <div class="header-right">
+                <span id="saveIndicator" class="save-indicator"><i class="fas fa-check-circle"></i> محفوظ</span>
                 <button id="installButton" class="header-btn install-btn" onclick="installApp()" aria-label="تثبيت التطبيق">
                     <i class="fas fa-download"></i>
                 </button>
@@ -965,46 +980,52 @@
         }
 
         // ============================================================
-        //  الحالة الأساسية
+        //  الحالة الأساسية (مع تحسين الحفظ والتحميل)
         // ============================================================
-        let state = JSON.parse(localStorage.getItem('smart_note_pro_v3')) || {
-            folders: [{ id: 'root', name: 'الملاحظات العامة', notes: [] }],
-            activeFolderId: 'root',
-            darkMode: false,
-            encryptedApiKey: ''
-        };
-        let currentNoteId = null;
+        let state = null;
 
-        function init() {
+        function loadState() {
+            const saved = localStorage.getItem('smart_note_pro_v3');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    // التحقق من صحة البيانات
+                    if (parsed.folders && Array.isArray(parsed.folders) && parsed.folders.length > 0) {
+                        state = parsed;
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('⚠️ بيانات محفوظة تالفة، سننشئ جديدة');
+                }
+            }
+            return false;
+        }
+
+        function initState() {
+            if (!loadState()) {
+                state = {
+                    folders: [{ id: 'root', name: 'الملاحظات العامة', notes: [] }],
+                    activeFolderId: 'root',
+                    darkMode: false,
+                    encryptedApiKey: ''
+                };
+                saveToStore(true);
+            }
+            // تطبيق الوضع الليلي
             if (state.darkMode) document.body.classList.add('dark');
-            renderFolders();
-            renderNotes();
-            updateEditorFolderSelect();
-            updateConnectionStatus();
-            if (state.encryptedApiKey) {
-                const el = document.getElementById('keyStatus');
-                el.textContent = '✅ المفتاح محفوظ ومشفر';
-                el.className = 'text-xs text-emerald-600 text-center';
-            }
-            if ('serviceWorker' in navigator) {
-                registerPWA();
-            }
-            // تحديث الأعلام عند تغيير اللغة
-            document.getElementById('fromLang').addEventListener('change', updateFlags);
-            document.getElementById('toLang').addEventListener('change', updateFlags);
         }
 
-        function updateFlags() {
-            const from = document.getElementById('fromLang');
-            const to = document.getElementById('toLang');
-            const fromFlag = from.options[from.selectedIndex].text.split(' ')[0];
-            const toFlag = to.options[to.selectedIndex].text.split(' ')[0];
-            document.getElementById('fromFlag').textContent = fromFlag;
-            document.getElementById('toFlag').textContent = toFlag;
-        }
-
-        function saveToStore() {
+        function saveToStore(silent = false) {
             localStorage.setItem('smart_note_pro_v3', JSON.stringify(state));
+            if (!silent) {
+                const indicator = document.getElementById('saveIndicator');
+                indicator.classList.add('show');
+                indicator.innerHTML = '<i class="fas fa-check-circle"></i> محفوظ';
+                clearTimeout(indicator._timeout);
+                indicator._timeout = setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
+            }
             updateConnectionStatus();
         }
 
@@ -1545,10 +1566,30 @@
         // ============================================================
         //  بدء التشغيل
         // ============================================================
-        init();
-        console.log('🚀 Smart Note Pro v3.0 - Fast AI with language selection');
+        initState();
+        renderFolders();
+        renderNotes();
+        updateEditorFolderSelect();
+        updateConnectionStatus();
+        // تحديث الأعلام عند تغيير اللغة
+        document.getElementById('fromLang').addEventListener('change', updateFlags);
+        document.getElementById('toLang').addEventListener('change', updateFlags);
+
+        function updateFlags() {
+            const from = document.getElementById('fromLang');
+            const to = document.getElementById('toLang');
+            const fromFlag = from.options[from.selectedIndex].text.split(' ')[0];
+            const toFlag = to.options[to.selectedIndex].text.split(' ')[0];
+            document.getElementById('fromFlag').textContent = fromFlag;
+            document.getElementById('toFlag').textContent = toFlag;
+        }
+
+        console.log('🚀 Smart Note Pro v3.1 - حفظ تلقائي مؤكد');
         console.log('🔒 المفتاح ' + (state.encryptedApiKey ? 'محفوظ ✓' : 'غير موجود'));
         console.log('📝 عدد المجلدات: ' + state.folders.length);
+
+        // ===== مربع نسخ الكود إضافي (ظاهر في الصفحة) =====
+        // يمكنك إضافة زر آخر في أي مكان تريده، لكننا أضفنا زر "نسخ الكود" في شريط المحرر.
     </script>
 </body>
 </html>
