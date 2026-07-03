@@ -17,7 +17,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js">
     </script>
     <style>
-        /* ===== إصلاح أساسي لمنع التمدد خارج الشاشة ===== */
+        /* ===== نفس الأنماط السابقة ===== */
         *,
         *::before,
         *::after {
@@ -1124,7 +1124,7 @@
         }
 
         // ============================================================
-        //  الذكاء الاصطناعي (ذكي - يختار النموذج المناسب تلقائياً)
+        //  الذكاء الاصطناعي (نهائي - يعمل مع جميع المفاتيح)
         // ============================================================
         async function getAvailableModel(apiKey) {
             try {
@@ -1143,7 +1143,7 @@
                 const preferred = ['gemini-1.5-flash', 'gemini-pro', 'gemini-1.5-pro'];
                 for (const pref of preferred) {
                     const found = supported.find(m => m.name.includes(pref));
-                    if (found) return found.name;
+                    if (found) return found.name; // يحتوي على 'models/'
                 }
                 if (supported.length > 0) return supported[0].name;
                 return null;
@@ -1154,6 +1154,10 @@
         }
 
         async function callGemini(apiKey, prompt, content, modelName) {
+            // نضمن أن modelName يبدأ بـ 'models/'
+            if (!modelName.startsWith('models/')) {
+                modelName = 'models/' + modelName;
+            }
             const url =
                 `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`;
             const response = await fetch(url, {
@@ -1199,20 +1203,34 @@
             }
 
             try {
-                // 1. الحصول على النموذج المناسب
-                const modelName = await getAvailableModel(apiKey);
-                if (!modelName) {
-                    throw new Error('لم يتم العثور على نموذج يدعم generateContent. تأكد من صلاحية المفتاح.');
+                // المحاولة الأولى: استخدام gemini-pro مباشرة (الأكثر شيوعاً)
+                let aiText = null;
+                let modelUsed = 'models/gemini-pro';
+                try {
+                    aiText = await callGemini(apiKey, promptText, content, 'gemini-pro');
+                } catch (err) {
+                    console.warn('فشل gemini-pro، نحاول البحث عن نموذج آخر...', err);
+                    // المحاولة الثانية: استعلام النماذج المتاحة
+                    const modelName = await getAvailableModel(apiKey);
+                    if (modelName) {
+                        try {
+                            aiText = await callGemini(apiKey, promptText, content, modelName);
+                            modelUsed = modelName;
+                        } catch (err2) {
+                            console.warn('فشل النموذج المستعلم', err2);
+                            throw new Error('لا يمكن استخدام أي نموذج متاح. تأكد من صلاحية المفتاح.');
+                        }
+                    } else {
+                        throw new Error('لم يتم العثور على نموذج يدعم generateContent. تأكد من المفتاح.');
+                    }
                 }
-                console.log(`✅ سيتم استخدام النموذج: ${modelName}`);
 
-                // 2. استدعاء النموذج
-                const aiText = await callGemini(apiKey, promptText, content, modelName);
-
-                if (confirm(`✅ تم ${actionLabel} بنجاح!\n\nهل تريد اعتماد النص المقترح؟`)) {
-                    document.getElementById('editContent').value = aiText;
-                    updateEditorStats();
-                    showToast('✅ تم تطبيق النص الجديد', 'success');
+                if (aiText) {
+                    if (confirm(`✅ تم ${actionLabel} بنجاح باستخدام النموذج ${modelUsed}!\n\nهل تريد اعتماد النص المقترح؟`)) {
+                        document.getElementById('editContent').value = aiText;
+                        updateEditorStats();
+                        showToast(`✅ تم تطبيق النص الجديد (${modelUsed})`, 'success');
+                    }
                 }
 
             } catch (error) {
@@ -1224,7 +1242,7 @@
         }
 
         // ============================================================
-        //  الإعدادات - تحسين اختبار المفتاح لعرض النماذج
+        //  الإعدادات - اختبار المفتاح وعرض النماذج
         // ============================================================
         function saveSettings() {
             const key = document.getElementById('apiKeyInput').value.trim();
@@ -1262,7 +1280,6 @@
                 if (response.ok) {
                     const data = await response.json();
                     const models = data.models || [];
-                    // استخراج أسماء النماذج المدعومة
                     const supported = models
                         .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes(
                             'generateContent'))
@@ -1272,9 +1289,10 @@
                     let msg = `✅ المفتاح صالح. النماذج المدعومة (${count}): ${list}`;
                     document.getElementById('keyStatus').textContent = msg;
                     document.getElementById('keyStatus').className = 'text-xs text-emerald-600 text-center';
-                    showToast(`✅ المفتاح صحيح! النماذج المتاحة: ${count}`, 'success');
+                    showToast(`✅ المفتاح صحيح! النماذج: ${count}`, 'success');
                 } else {
-                    document.getElementById('keyStatus').textContent = '❌ المفتاح غير صالح';
+                    const err = await response.json();
+                    document.getElementById('keyStatus').textContent = `❌ المفتاح غير صالح: ${err.error?.message || ''}`;
                     document.getElementById('keyStatus').className = 'text-xs text-red-600 text-center';
                     showToast('❌ المفتاح غير صالح', 'error');
                 }
@@ -1351,7 +1369,7 @@
         //  بدء التشغيل
         // ============================================================
         init();
-        console.log('🚀 Smart Note Pro v3.0 - AI Auto Model Selection');
+        console.log('🚀 Smart Note Pro v3.0 - AI Fixed (gemini-pro + auto fallback)');
         console.log('🔒 المفتاح ' + (state.encryptedApiKey ? 'محفوظ ✓' : 'غير موجود'));
         console.log('📝 عدد المجلدات: ' + state.folders.length);
     </script>
